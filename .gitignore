@@ -1,0 +1,5 @@
+DataBase
+.vscode
+.env
+*.session
+*.pyc
