@@ -20,4 +20,4 @@ symbol_keywords = [
 
 symbols = [keywords[0] for keywords in symbol_keywords]
 
-blacklist = ['HOLD', 'BE', 'BREAKEVEN', 'HIT', 'RUNNING', 'CLOSE', 'COLLECT']
+blacklist = ['HOLD', 'BE', 'BREAKEVEN', 'HIT', 'RUNNING', 'CLOSE', 'COLLECT', 'PIPS']
