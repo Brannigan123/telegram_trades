@@ -1,7 +1,10 @@
+from asyncio.exceptions import IncompleteReadError
+
 import logging
 import time
 import toml
 import json
+import math
 import os
 import re
 
@@ -235,13 +238,15 @@ async def try_trade(event: events.NewMessage.Event | events.MessageEdited.Event)
         await tg_client.send_message(tg_alerts_chat, f"Affected by News\n\n{news}\n\nFrom: {(await event.get_chat()).title}\n\n{message}")
     else:
         trade_option = extract_trade_option(message)
+        if not trade_option:
+            return
         if is_trade_against_trend(symbol, trade_option):
             await tg_client.send_message(tg_alerts_chat, f"Against Trend {market_trends.get(symbol)}\nFrom: {(await event.get_chat()).title}\n\n{message}")   
         else:
             await trade(message, symbol, trade_option)
             await tg_client.send_message(tg_alerts_chat, f"New Trade:\nFrom: {(await event.get_chat()).title}\n\n{message}")
                     
-@tl.job(interval=timedelta(hours=2))
+@tl.job(interval=timedelta(minutes=10))
 def update_news_impact_data():
     """
     Update the news impact data for each symbol.
@@ -256,15 +261,21 @@ def update_news_impact_data():
     """
     calendar_start = datetime.now() + timedelta(hours=server_hrs_timedelta)
     calendar_end = calendar_start + timedelta(days=1)
+    
     for symbol in symbols:
-        try:
-            news = api.calendar(symbol,fmt_date(calendar_start),fmt_date(calendar_end))
-            high_imapact_news[symbol] = news[[int(i) > 1 for i in list(news['impact'])]]
-        except Exception as e:
-            print(e)
+        retries = 0
+        while retries < 5:
+            try:
+                news = api.calendar(symbol,fmt_date(calendar_start),fmt_date(calendar_end))
+                high_imapact_news[symbol] = news if news.empty else news[[int(i) > 1 for i in list(news['impact'])]]
+                break
+            except Exception as e:
+                print(symbol, retries, e, news)
+                time.sleep(math.ceil(1+retries/3))
+                retries += 1
             
     
-@tl.job(interval=timedelta(minutes=15))
+@tl.job(interval=timedelta(minutes=10))
 def update_market_trends():
     """
     Update the market trends by fetching historical data for each symbol and calculating the average difference between the highs and lows.
@@ -284,14 +295,19 @@ def update_market_trends():
         history_start = history_start - timedelta(days=1)
     timeframe="H1"
     for symbol in symbols:
-        try:
-            history = api.history(symbol, timeframe,fmt_date(history_start),fmt_date(history_end))
-            highs_delta = avg_cons_diff(list(history['high']))
-            lows_delta = avg_cons_diff(list(history['low']))
-            market_trends[symbol] = round((highs_delta + lows_delta) / 2, 4)
-            print(f"{symbol} Trend: {market_trends[symbol]}")
-        except Exception as e:
-            print(e)
+        retries = 0
+        while retries < 5:
+            try:
+                history = api.history(symbol, timeframe,fmt_date(history_start),fmt_date(history_end))
+                highs_delta = avg_cons_diff(list(history['high']))
+                lows_delta = avg_cons_diff(list(history['low']))
+                market_trends[symbol] = round((highs_delta + lows_delta) / 2, 4)
+                print(f"{symbol} Trend: {market_trends[symbol]}")
+                break
+            except Exception as e:
+                print(symbol, retries, e, history)
+                time.sleep(math.ceil(1+retries/3))
+                retries += 1
                        
                             
 if __name__ == "__main__": 
