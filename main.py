@@ -24,14 +24,10 @@ load_dotenv()
 
 
 tl = Timeloop()
-api = Metatrader()
 
 tg_test_signals_chat = -4000930568
 tg_alerts_chat = -4046528690
 tg_chats = [-1001763228815, -1001620915850, -1001195451019, -1001788360823,  tg_test_signals_chat]
-account_info = api.accountInfo()
-
-print(toml.dumps(account_info), "\n")
 
 server_hrs_timedelta=-3
 
@@ -211,12 +207,12 @@ async def trade(message: str, symbol: str, trade_option: int):
     Returns:
         None
     """
-    tps, sl = (extract_tps(message), extract_sl(message)) 
+    tps, sl = (extract_tps(message), extract_sl(message))
+    api = Metatrader()
     if trade_option == TRADE_BUY: 
         for tp in tps: api.buy(symbol, 0.01, sl, tp, 5)
     elif trade_option == TRADE_SELL:
         for tp in tps: api.sell(symbol, 0.01, sl, tp, 5)
-
         
 async def try_trade(event: events.NewMessage.Event | events.MessageEdited.Event):
     """
@@ -238,7 +234,7 @@ async def try_trade(event: events.NewMessage.Event | events.MessageEdited.Event)
         await tg_client.send_message(tg_alerts_chat, f"Affected by News\n\n{news}\n\nFrom: {(await event.get_chat()).title}\n\n{message}")
     else:
         trade_option = extract_trade_option(message)
-        if not trade_option:
+        if trade_option is None:
             return
         if is_trade_against_trend(symbol, trade_option):
             await tg_client.send_message(tg_alerts_chat, f"Against Trend {market_trends.get(symbol)}\nFrom: {(await event.get_chat()).title}\n\n{message}")   
@@ -266,6 +262,7 @@ def update_news_impact_data():
         retries = 0
         while retries < 5:
             try:
+                api = Metatrader()
                 news = api.calendar(symbol,fmt_date(calendar_start),fmt_date(calendar_end))
                 high_imapact_news[symbol] = news if news.empty else news[[int(i) > 1 for i in list(news['impact'])]]
                 break
@@ -298,6 +295,7 @@ def update_market_trends():
         retries = 0
         while retries < 5:
             try:
+                api = Metatrader()
                 history = api.history(symbol, timeframe,fmt_date(history_start),fmt_date(history_end))
                 highs_delta = avg_cons_diff(list(history['high']))
                 lows_delta = avg_cons_diff(list(history['low']))
@@ -337,7 +335,7 @@ if __name__ == "__main__":
                 tg_client.run_until_disconnected()
                 
                 
-            except TimedOutError as e:
+            except (ConnectionError, TimedOutError) as e:
                     time.sleep(60)
                     execute = True
             except FloodError as e:
