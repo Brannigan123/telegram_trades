@@ -12,7 +12,7 @@ from ejtraderMT import Metatrader
 from telethon.sync import TelegramClient
 from telethon.errors.rpcbaseerrors import FloodError, TimedOutError
 from telethon import events
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 from timeloop import Timeloop
 from dotenv import load_dotenv
 
@@ -285,12 +285,13 @@ def update_market_trends():
     """
     history_end = datetime.now() + timedelta(hours=server_hrs_timedelta)
     history_start = history_end
-    daycount = 1
-    while daycount < 3:
+    daycount = 0
+    while True:
         if history_start.weekday() < 5:
             daycount += 1
+            if daycount >=2: break
         history_start = history_start - timedelta(days=1)
-    timeframe="H1"
+    timeframe="M30"
     for symbol in symbols:
         retries = 0
         while retries < 5:
@@ -322,11 +323,15 @@ if __name__ == "__main__":
             try:
                 @tg_client.on(events.NewMessage(chats=tg_chats,))
                 async def on_new_msg(event):
-                    await try_trade(event)
+                    timediff =  datetime.now(timezone.utc) - event.date
+                    if timediff < timedelta(minutes=1):
+                        await try_trade(event)
                         
                 @tg_client.on(events.MessageEdited(chats=tg_chats,))
                 async def on_edited_msg(event):
-                    await try_trade(event)
+                    timediff =  datetime.now(timezone.utc) - event.date
+                    if timediff < timedelta(minutes=1):
+                        await try_trade(event)
 
                 update_news_impact_data()
                 update_market_trends()
