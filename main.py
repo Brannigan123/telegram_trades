@@ -27,7 +27,7 @@ tl = Timeloop()
 
 tg_test_signals_chat = -4000930568
 tg_alerts_chat = -4046528690
-tg_chats = [-1001763228815, -1001620915850, -1001195451019, -1001788360823,  tg_test_signals_chat]
+tg_chats = [-1001711779085, -1001788360823, -1001763228815, -1001620915850, -1001195451019, -1001573823629,  tg_test_signals_chat]
 
 server_hrs_timedelta=-3
 
@@ -111,7 +111,7 @@ def is_trade_against_trend(symbol: str, option: int):
     """
     try:
         trend = market_trends.get(symbol)
-        if not trend:
+        if trend is None:
             return True
         if option == TRADE_SELL and trend > 0:
             return True
