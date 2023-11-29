@@ -16,7 +16,7 @@ from datetime import timedelta, datetime, timezone
 from timeloop import Timeloop
 from dotenv import load_dotenv
 
-from constants import TRADE_SELL, TRADE_BUY, symbols, symbol_keywords, blacklist
+from constants import TRADE_SELL, TRADE_BUY, symbols, symbol_keywords, blacklist, tg_chats, tg_alerts_chat
 
 logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s', level=logging.ERROR)
 #logging.getLogger('telethon.messagebox').setLevel(logging.NOTSET + 1)
@@ -25,17 +25,10 @@ load_dotenv()
 
 tl = Timeloop()
 
-tg_test_signals_chat = -4000930568
-tg_alerts_chat = -4046528690
-tg_chats = [-1001711779085, -1001788360823, -1001763228815, -1001620915850, -1001195451019, -1001573823629,  tg_test_signals_chat]
-
 server_hrs_timedelta=-3
 
 high_imapact_news = {}
 market_trends = {}
-
-
-
 
 def fmt_date(d: datetime):
     """
@@ -208,11 +201,12 @@ async def trade(message: str, symbol: str, trade_option: int):
         None
     """
     tps, sl = (extract_tps(message), extract_sl(message))
+    lots = max(0.01, round(0.07 / len(tps), 2))
     api = Metatrader()
     if trade_option == TRADE_BUY: 
-        for tp in tps: api.buy(symbol, 0.01, sl, tp, 5)
+        for tp in tps: api.buy(symbol, lots, sl, tp, 5)
     elif trade_option == TRADE_SELL:
-        for tp in tps: api.sell(symbol, 0.01, sl, tp, 5)
+        for tp in tps: api.sell(symbol, lots, sl, tp, 5)
         
 async def try_trade(event: events.NewMessage.Event | events.MessageEdited.Event):
     """
@@ -236,8 +230,8 @@ async def try_trade(event: events.NewMessage.Event | events.MessageEdited.Event)
         trade_option = extract_trade_option(message)
         if trade_option is None:
             return
-        if is_trade_against_trend(symbol, trade_option):
-            await tg_client.send_message(tg_alerts_chat, f"Against Trend {market_trends.get(symbol)}\nFrom: {(await event.get_chat()).title}\n\n{message}")   
+        #if is_trade_against_trend(symbol, trade_option):
+        #    await tg_client.send_message(tg_alerts_chat, f"Against Trend {market_trends.get(symbol)}\nFrom: {(await event.get_chat()).title}\n\n{message}")   
         else:
             await trade(message, symbol, trade_option)
             await tg_client.send_message(tg_alerts_chat, f"New Trade:\nFrom: {(await event.get_chat()).title}\n\n{message}")

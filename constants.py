@@ -21,3 +21,18 @@ symbol_keywords = [
 symbols = [keywords[0] for keywords in symbol_keywords]
 
 blacklist = ['HOLD', 'BE', 'BREAKEVEN', 'HIT', 'RUNNING', 'CLOSE', 'COLLECT', 'PIPS', 'SUCCESS']
+
+tg_test_signals_chat = -4000930568
+tg_alerts_chat = -4046528690
+tg_chats = [
+    # UK Scalping Traders official
+    -1001195451019,
+    # Pepperston Inst.
+    -1001783135248,
+    # XAUUSD/NASDAQ
+    -1001788360823,
+    # Forex Scalping
+    -1001620915850,
+    # Test Signals Channel
+    tg_test_signals_chat
+    ]
