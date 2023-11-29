@@ -78,8 +78,8 @@ def news_affecting_symbol(symbol: str):
         news = high_imapact_news.get(symbol)
         if not (news is None or news.empty):
             current_time = datetime.now() + timedelta(hours=server_hrs_timedelta)
-            start_time = current_time - timedelta(hours=1)
-            end_time = current_time + timedelta(minutes=30)
+            start_time = current_time - timedelta(minutes=30)
+            end_time = current_time + timedelta(hours=1)
             news = news[start_time:end_time]
             if news.empty: return None
             news.rename_axis('when', inplace=True)
