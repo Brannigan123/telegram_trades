@@ -27,8 +27,6 @@ tg_alerts_chat = -4046528690
 tg_chats = [
     # UK Scalping Traders official
     -1001195451019,
-    # Pepperston Inst.
-    -1001783135248,
     # XAUUSD/NASDAQ
     -1001788360823,
     # Forex Scalping
